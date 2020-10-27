@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=12 format=2]
 
 [ext_resource path="res://MyFirstLightingEngine.gd" type="Script" id=1]
 [ext_resource path="res://1px.png" type="Texture" id=2]
@@ -7,9 +7,6 @@
 [ext_resource path="res://shaders/VoronoiSeed.shader" type="Shader" id=6]
 [ext_resource path="res://shaders/JumpFloodPass.shader" type="Shader" id=7]
 [ext_resource path="res://shaders/DistanceField.shader" type="Shader" id=8]
-
-[sub_resource type="ViewportTexture" id=6]
-viewport_path = NodePath("VoronoiSeed")
 
 [sub_resource type="ShaderMaterial" id=2]
 shader = ExtResource( 6 )
@@ -22,7 +19,7 @@ shader_param/u_max_steps = 0.0
 
 [sub_resource type="ShaderMaterial" id=4]
 shader = ExtResource( 8 )
-shader_param/u_dist_mod = 1.0
+shader_param/u_dist_mod = 100.0
 
 [sub_resource type="ShaderMaterial" id=5]
 shader = ExtResource( 5 )
@@ -47,7 +44,6 @@ render_target_update_mode = 3
 [node name="Screen" type="TextureRect" parent="."]
 margin_right = 40.0
 margin_bottom = 40.0
-texture = SubResource( 6 )
 __meta__ = {
 "_edit_use_anchors_": false
 }

@@ -52,9 +52,9 @@ func _ready():
 			render_pass = $JumpFloodPass
 		else:
 			render_pass = $JumpFloodPass.duplicate(0)
+			add_child(render_pass)
 			
 		render_pass.get_child(0).material = render_pass.get_child(0).material.duplicate(0)
-		add_child(render_pass)
 		_voronoi_passes.append(render_pass)
 		
 		# here we set the input texture for each pass, which is the previous pass, unless it's the first pass in which case it's
@@ -80,6 +80,7 @@ func _ready():
 	$DistanceField.size = get_viewport().size
 	$DistanceField/Tex.rect_size = get_viewport().size
 	$DistanceField/Tex.material.set_shader_param("u_input_tex", _voronoi_passes[_voronoi_passes.size() - 1].get_texture())
+	$DistanceField/Tex.material.set_shader_param("u_dist_mod", 10.0)
 	
 	# set the screen texture to use the distance field output.
 	$Screen.texture = $DistanceField.get_texture()
@@ -91,10 +92,10 @@ func _ready():
 	$GI/Tex.rect_size = get_viewport().size
 	$GI/Tex.material.set_shader_param("u_buffer_size", get_viewport().size)
 	$GI/Tex.material.set_shader_param("u_rays_per_pixel", 32)
-	$GI/Tex.material.set_shader_param("u_distance_tex", $DistanceField.get_texture())
-	$GI/Tex.material.set_shader_param("u_scene_tex", $EmittersAndOccluders.get_texture())
+	$GI/Tex.material.set_shader_param("u_distance_data", $DistanceField.get_texture())
+	$GI/Tex.material.set_shader_param("u_scene_data", $EmittersAndOccluders.get_texture())
 	$GI/Tex.material.set_shader_param("u_noise_data", load("res://noise.png"))
-	$GI/Tex.material.set_shader_param("u_dist_mod", 1.0)
+	$GI/Tex.material.set_shader_param("u_dist_mod", 10.0)
 	$GI/Tex.material.set_shader_param("u_emission_multi", 1.0)
 	$GI/Tex.material.set_shader_param("u_emission_range", 2.0)
 	$GI/Tex.material.set_shader_param("u_emission_dropoff", 2.0)
@@ -102,8 +103,6 @@ func _ready():
 	
 	# set the screen texture to use the GI output.
 	$Screen.texture = $GI.get_texture()
-	
-	
 	
 	
 	

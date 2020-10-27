@@ -5,7 +5,7 @@ uniform float PI = 3.141596;
 
 // uniforms
 uniform vec2 u_buffer_size;
-uniform float u_rays_per_pixel = 32;
+uniform int u_rays_per_pixel = 32;
 uniform sampler2D u_distance_data;
 uniform sampler2D u_scene_data;
 uniform sampler2D u_noise_data;
@@ -14,6 +14,11 @@ uniform float u_emission_multi = 1.0;
 uniform float u_emission_range = 2.0;
 uniform float u_emission_dropoff = 2.0;
 uniform int u_max_raymarch_steps = 32;
+
+float epsilon()
+{
+	return 0.01f;
+}
 
 // ================================================================================
 // return the surface data at a given location. 'uv' contains the hit location, while
@@ -27,8 +32,7 @@ void get_material(vec2 uv, vec4 hit_data, out float emissive, out vec3 colour)
 	// read the surface data from emissive/colour maps. 
 	// TODO: could probably be optimised by combining into one texture sample.
 	vec4 emissive_data = texture(u_scene_data, uv);
-	emissive = emissive_data.r * u_emission_multi;
-	colour = vec3(1.0);
+	emissive = emissive_data.r * 5.0;
 }
 
 // ================================================================================
@@ -58,7 +62,7 @@ bool raymarch(vec2 origin, vec2 ray, out vec2 hit_pos, out vec4 hit_data, out fl
 		step_dist = map(sample_point, hit_data);
 		
 		// consider a hit if distance to surface is < epsilon (half pixel).
-		if(step_dist == 0.0)
+		if(step_dist < epsilon())
 		{
 			hit_pos = sample_point;
   			return true;
@@ -67,8 +71,8 @@ bool raymarch(vec2 origin, vec2 ray, out vec2 hit_pos, out vec4 hit_data, out fl
 		// since this distance is the distance to nearest surface, it guarantees we won't 'overstep'
 		// and go past a surface. worst case is we are parallel and close to the surface, so we can't step
 		// far but also won't reach the surface. this is where we have to make a trade-off in u_max_raymarch_steps.
-		step_dist = max(step_dist, min(1.0 / u_buffer_size.x, 1.0 / u_buffer_size.y));
-		t += step_dist;
+		step_dist = step_dist;
+		t += 1.0 / u_buffer_size.y;
 		ray_dist = t;
 	}
 	return false;
@@ -96,14 +100,15 @@ void fragment()
 	float rand02pi = texture(u_noise_data, fract((uv + time) * 0.4)).r * 2.0 * PI; // noise sample
 	float golden_angle = PI * 0.7639320225;
 	
-	for(float i = 0.0; i < u_rays_per_pixel; i++)
+	float hits = 0.0;
+	for(int i = 0; i < u_rays_per_pixel; i++)
 	{
 		vec2 hit_pos;
 		vec4 hit_data;
 		float ray_dist;
 		
 		// get our ray dir by taking the random angle and adding golden_angle * ray number.
-		float cur_angle = rand02pi + golden_angle * i;
+		float cur_angle = rand02pi + golden_angle * float(i);
 		vec2 rand_direction = vec2(cos(cur_angle), sin(cur_angle));
 		bool hit = raymarch(uv, rand_direction, hit_pos, hit_data, ray_dist);
 		if(hit)
@@ -112,28 +117,13 @@ void fragment()
 			vec3 mat_colour;
 			get_material(hit_pos, hit_data, mat_emissive, mat_colour);
 			
-			// convert UVs back to 0-1 space.
-			vec2 st = hit_pos;
-			st.x *= inv_aspect;
-			
-			float last_emission = 0.0;
-			vec3 last_colour = vec3(0.0);
-			
-			// calculate total emissive/colour values from direct and bounced (last frame) lighting.
-			float emission = mat_emissive + last_emission;
-			float r = u_emission_range;
-			float drop = u_emission_dropoff;
-			// attenuation calculation - very tweakable to get the correct sort of light range/dropoff.
-			float att = pow(max(1.0 - (ray_dist * ray_dist) / (r * r), 0.0), u_emission_dropoff);
-			emis += emission * att;
-			col += (mat_emissive + last_emission) * (mat_colour + last_colour) * att;
+			emis += mat_emissive;
 		}
 	}
 	
 	// right now, emis and col store the sum of contribution of all rays to this pixel, we need
 	// to normalise it.
-	emis *= (1.0 / u_rays_per_pixel);
-	col *= (1.0 / u_rays_per_pixel);
+	emis /= float(u_rays_per_pixel);
 	
-	COLOR = vec4(col * emis, 1.0);
+	COLOR = vec4(vec3(emis), 1.0);
 }

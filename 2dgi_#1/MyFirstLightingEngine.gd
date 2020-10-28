@@ -4,12 +4,9 @@ var _voronoi_passes = []
 
 func _ready():
 	# parent our emissive and occluding sprites to the EmittersAndOccluders viewport at runtime.
-	var emitter = $Emitter
-	var occluder = $Occluder
-	remove_child(emitter)
-	remove_child(occluder)
-	$EmittersAndOccluders.add_child(emitter)
-	$EmittersAndOccluders.add_child(occluder)
+	var scene = $Scene
+	remove_child(scene)
+	$EmittersAndOccluders.add_child(scene)
 	
 	# setup our viewports and screen texture.
 	# you can do this in the editor, but i prefer to do it in code since it's more visible and easier to update.

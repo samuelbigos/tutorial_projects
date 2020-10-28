@@ -22,18 +22,16 @@ func _ready():
 	# setup our voronoi seed render texture.
 	$VoronoiSeed.render_target_update_mode = Viewport.UPDATE_ALWAYS
 	$VoronoiSeed.render_target_v_flip = true
-	$VoronoiSeed.size = get_viewport().size
-	$VoronoiSeed/Tex.rect_size = get_viewport().size
+	var viewport_squared = Vector2(max(get_viewport().size.x, get_viewport().size.y), max(get_viewport().size.x, get_viewport().size.y))
+	$VoronoiSeed.size = viewport_squared
+	$VoronoiSeed/Tex.rect_size = viewport_squared
 	$VoronoiSeed/Tex.material.set_shader_param("u_input_tex", $EmittersAndOccluders.get_texture())
-	
-	# set the screen texture to use the voronoi seed output.
-	$Screen.texture = $VoronoiSeed.get_texture()
 	
 	# setup our voronoi pass render texture.
 	$JumpFloodPass.render_target_update_mode = Viewport.UPDATE_ALWAYS
 	$JumpFloodPass.render_target_v_flip = true
-	$JumpFloodPass.size = get_viewport().size
-	$JumpFloodPass/Tex.rect_size = get_viewport().size
+	$JumpFloodPass.size = viewport_squared
+	$JumpFloodPass/Tex.rect_size = viewport_squared
 
 	# number of passes required is the log2 of the largest viewport dimension rounded up to the nearest power of 2.
 	# i.e. 768x512 is log2(1024) == 10
@@ -64,15 +62,11 @@ func _ready():
 			input_texture = _voronoi_passes[i - 1].get_texture()
 		
 		# set size and shader uniforms for this pass.
-		render_pass.set_size(get_viewport().size)
 		render_pass.get_child(0).material.set_shader_param("u_level", i)
 		render_pass.get_child(0).material.set_shader_param("u_max_steps", passes)
 		render_pass.get_child(0).material.set_shader_param("u_offset", offset)
 		render_pass.get_child(0).material.set_shader_param("u_input_tex", input_texture)
 		
-	# set the screen texture to use the final jump flooding pass output.
-	$Screen.texture = _voronoi_passes[_voronoi_passes.size() - 1].get_texture()
-
 	# setup our distance field render texture.
 	$DistanceField.transparent_bg = true
 	$DistanceField.render_target_update_mode = Viewport.UPDATE_ALWAYS
@@ -80,45 +74,15 @@ func _ready():
 	$DistanceField.size = get_viewport().size
 	$DistanceField/Tex.rect_size = get_viewport().size
 	$DistanceField/Tex.material.set_shader_param("u_input_tex", _voronoi_passes[_voronoi_passes.size() - 1].get_texture())
-	$DistanceField/Tex.material.set_shader_param("u_dist_mod", 10.0)
-	
-	# set the screen texture to use the distance field output.
-	$Screen.texture = $DistanceField.get_texture()
+	$DistanceField/Tex.material.set_shader_param("u_dist_mod", 1.0)
 	
 	# setup our distance field render texture.
 	$GI.render_target_update_mode = Viewport.UPDATE_ALWAYS
 	$GI.render_target_v_flip = true
 	$GI.size = get_viewport().size
 	$GI/Tex.rect_size = get_viewport().size
-	$GI/Tex.material.set_shader_param("u_buffer_size", get_viewport().size)
 	$GI/Tex.material.set_shader_param("u_rays_per_pixel", 32)
 	$GI/Tex.material.set_shader_param("u_distance_data", $DistanceField.get_texture())
 	$GI/Tex.material.set_shader_param("u_scene_data", $EmittersAndOccluders.get_texture())
-	$GI/Tex.material.set_shader_param("u_noise_data", load("res://noise.png"))
-	$GI/Tex.material.set_shader_param("u_dist_mod", 10.0)
 	$GI/Tex.material.set_shader_param("u_emission_multi", 1.0)
-	$GI/Tex.material.set_shader_param("u_emission_range", 2.0)
-	$GI/Tex.material.set_shader_param("u_emission_dropoff", 2.0)
-	$GI/Tex.material.set_shader_param("u_max_raymarch_steps", 128.0)
-	
-	# set the screen texture to use the GI output.
-	$Screen.texture = $GI.get_texture()
-	
-	
-	
-	
-	
-	
-	
-	
-	VisualServer.viewport_set_active($EmittersAndOccluders.get_viewport_rid(), false)
-	VisualServer.viewport_set_active($EmittersAndOccluders.get_viewport_rid(), true)
-	VisualServer.viewport_set_active($VoronoiSeed.get_viewport_rid(), false)
-	VisualServer.viewport_set_active($VoronoiSeed.get_viewport_rid(), true)
-	for i in _voronoi_passes:
-		VisualServer.viewport_set_active(i.get_viewport_rid(), false)
-		VisualServer.viewport_set_active(i.get_viewport_rid(), true)
-	VisualServer.viewport_set_active($DistanceField.get_viewport_rid(), false)
-	VisualServer.viewport_set_active($DistanceField.get_viewport_rid(), true)
-	VisualServer.viewport_set_active($GI.get_viewport_rid(), false)
-	VisualServer.viewport_set_active($GI.get_viewport_rid(), true)
+	$GI/Tex.material.set_shader_param("u_max_raymarch_steps", 128)
